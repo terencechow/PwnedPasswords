@@ -1,0 +1,3 @@
+[submodule "lib/smhasher"]
+	path = lib/smhasher
+	url = https://github.com/aappleby/smhasher.git
