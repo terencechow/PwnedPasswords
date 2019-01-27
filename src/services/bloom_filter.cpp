@@ -27,9 +27,9 @@ void BloomFilter::add_element(string element)
     LargeInt a, b;
     calculate_hashes(element, &a, &b);
 
-    for (int i = 0; i < NUM_HASH_FNS; i++)
+    for (uint8_t i = 0; i < NUM_HASH_FNS; i++)
     {
-        uint64_t index = (a + b * (uint8_t)i) % (uint64_t)NUM_BITS;
+        uint64_t index = (a + b * i) % NUM_BITS;
         bit_array.set(index, 1);
     }
 }
@@ -40,9 +40,9 @@ bool BloomFilter::check_element(string element)
     LargeInt a, b;
     calculate_hashes(element, &a, &b);
 
-    for (int i = 0; i < NUM_HASH_FNS; i++)
+    for (uint8_t i = 0; i < NUM_HASH_FNS; i++)
     {
-        uint64_t index = (a + b * (uint8_t)i) % (uint64_t)NUM_BITS;
+        uint64_t index = (a + b * i) % NUM_BITS;
         if (!bit_array.test(index))
         {
             return false;
@@ -67,8 +67,8 @@ void BloomFilter::save_to_file(string filename)
             {
                 outfile.write(reinterpret_cast<const char *>(&temp), sizeof(temp));
             }
-            mask = (uint64_t)1;
-            temp = (uint64_t)0;
+            mask = 1;
+            temp = 0;
         }
 
         // copy bits to temp with |=
@@ -89,21 +89,25 @@ void BloomFilter::save_to_file(string filename)
 
 void BloomFilter::init_from_dbfile(ifstream &dbfile)
 {
+    high_resolution_clock::time_point t1 = high_resolution_clock::now();
     // dbfile
     char c;
-    uint64_t index = (uint64_t)0;
+    uint64_t index = 0;
     while (dbfile.get(c))
     {
         uint8_t temp = (uint8_t)c;
-        for (size_t i = 0; i < 8; i++)
+        for (uint8_t i = 0; i < 8; i++)
         {
-            if ((temp >> i) & (uint8_t)1)
+            if ((temp >> i) & 1)
             {
                 bit_array.set(index);
             }
             index++;
         }
     }
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    auto duration = duration_cast<seconds>(t2 - t1).count();
+    cout << "init from db cost " << duration << " seconds \n";
 }
 
 void BloomFilter::init_from_textfile(ifstream &inFile)
@@ -111,24 +115,25 @@ void BloomFilter::init_from_textfile(ifstream &inFile)
     // for each line add it to the bloom filter
     string element;
     high_resolution_clock::time_point t0 = high_resolution_clock::now();
+    high_resolution_clock::time_point t1 = high_resolution_clock::now();
     while (getline(inFile, element))
     {
         string delimiter(":");
         string hash = element.substr(0, element.find(delimiter));
-        high_resolution_clock::time_point t1 = high_resolution_clock::now();
         add_element(hash);
         high_resolution_clock::time_point t2 = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(t2 - t1).count();
-        cout << "Adding element took: " << duration << " microseconds \n";
+        cout << "Loop cost " << duration << " microseconds \n";
+        t1 = high_resolution_clock::now();
     }
-
+    
     high_resolution_clock::time_point t3 = high_resolution_clock::now();
-    auto duration = duration_cast<seconds>(t3 - t0).count();
-    cout << "Reading whole file took: " << duration << " milliseconds \n";
+    auto duration = duration_cast<minutes>(t3 - t0).count();
+    cout << "Reading whole file took: " << duration << " minutes \n";
     // write it to file so we don't have to do it again
     save_to_file("data/pwned_passwords_bloomfilter.db");
 
     high_resolution_clock::time_point t4 = high_resolution_clock::now();
     duration = duration_cast<seconds>(t4 - t3).count();
-    cout << "Writing whole file took: " << duration << " milliseconds \n";
+    cout << "Writing whole file took: " << duration << " seconds \n";
 }

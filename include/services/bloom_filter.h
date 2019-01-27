@@ -20,7 +20,7 @@ using namespace std::chrono;
 * number of bits = 15829134822
 */
 
-#define NUM_BITS 1000 //15829134822
+#define NUM_BITS 15829134822
 #define NUM_HASH_FNS 20
 
 #include <services/large_int.h>
