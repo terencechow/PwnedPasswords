@@ -126,7 +126,7 @@ void BloomFilter::init_from_textfile(ifstream &inFile)
     auto duration = duration_cast<seconds>(t3 - t0).count();
     cout << "Reading whole file took: " << duration << " milliseconds \n";
     // write it to file so we don't have to do it again
-    save_to_file("pwned_passwords_bloomfilter.db");
+    save_to_file("data/pwned_passwords_bloomfilter.db");
 
     high_resolution_clock::time_point t4 = high_resolution_clock::now();
     duration = duration_cast<seconds>(t4 - t3).count();
