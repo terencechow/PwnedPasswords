@@ -9,6 +9,8 @@
 #include <stdlib.h> /* strtoull */
 #include <services/hash.h>
 #include <chrono>
+#include <thread>
+
 using namespace std::chrono;
 
 /*
@@ -22,6 +24,7 @@ using namespace std::chrono;
 
 #define NUM_BITS 15829134822
 #define NUM_HASH_FNS 20
+#define NUM_THREADS 8
 
 #include <services/large_int.h>
 
@@ -31,11 +34,17 @@ class BloomFilter
 {
 private:
   bitset<NUM_BITS> bit_array;
+  thread *threads;
+  mutex file_mutex;
+  mutex bitset_mutex;
   void calculate_hashes(string element, LargeInt *murmur_output, LargeInt *sha256_output);
+  void calculate_indices(string element, uint64_t *indices);
+  void insert_passwords_thread(ifstream &inFile);
+  void add_string_to_buffer();
 
 public:
   BloomFilter();
-  BloomFilter(string s);
+  ~BloomFilter();
   void add_element(string element);
   bool check_element(string element);
   void save_to_file(string filename);

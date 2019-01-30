@@ -7,7 +7,7 @@ OPENSSL_DIR = /usr/local/opt/openssl
 
 # # Flags passed to the C++ compiler.
 CC=g++
-CXXFLAGS=-std=c++11 -O3 -g -Wall -Wextra -pedantic -I$(INCLUDE_DIR) -I$(LIB_DIR) -I$(OPENSSL_DIR)/include 
+CXXFLAGS=-std=c++11 -stdlib=libc++ -O3 -g -Wall -Wextra -pedantic -I$(INCLUDE_DIR) -I$(LIB_DIR) -I$(OPENSSL_DIR)/include 
 
 
 # all : $(TESTS)

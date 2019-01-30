@@ -18,6 +18,7 @@ int main()
     {
         ifstream inFile;
         string password_filename("data/pwned-passwords-sha1-ordered-by-hash-v4.txt");
+        // string password_filename("data/pwned-passwords-sample.txt");
         inFile.open(password_filename);
         if (!inFile)
         {
@@ -62,6 +63,7 @@ int main()
     }
 
     EVP_cleanup();
+    delete bloom_filter;
 
     return 0;
 }
