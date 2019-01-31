@@ -1,14 +1,14 @@
 #ifndef _BLOOM_FILTER_
 #define _BLOOM_FILTER_
-#include <math.h>
-#include <bitset>
-#include <fstream>
 #include "MurmurHash3.h"
-#include <iostream>
-#include <string>
-#include <stdlib.h> /* strtoull */
-#include <services/hash.h>
+#include <bitset>
 #include <chrono>
+#include <fstream>
+#include <iostream>
+#include <math.h>
+#include <services/hash.h>
+#include <stdlib.h> /* strtoull */
+#include <string>
 #include <thread>
 
 using namespace std::chrono;
@@ -37,7 +37,8 @@ private:
   thread *threads;
   mutex file_mutex;
   mutex bitset_mutex;
-  void calculate_hashes(string element, LargeInt *murmur_output, LargeInt *sha256_output);
+  void calculate_hashes(string element, LargeInt *murmur_output,
+                        LargeInt *sha256_output);
   void calculate_indices(string element, uint64_t *indices);
   void insert_passwords_thread(ifstream &inFile);
   void add_string_to_buffer();
