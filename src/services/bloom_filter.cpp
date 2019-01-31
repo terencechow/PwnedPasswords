@@ -48,6 +48,7 @@ void BloomFilter::insert_passwords_thread(ifstream &inFile)
 
 void BloomFilter::init_from_textfile(ifstream &inFile)
 {
+    high_resolution_clock::time_point t1 = high_resolution_clock::now();
     for (uint8_t i = 0; i < NUM_THREADS; i++)
     {
         threads[i] = thread(&BloomFilter::insert_passwords_thread, this, ref(inFile));
@@ -57,9 +58,15 @@ void BloomFilter::init_from_textfile(ifstream &inFile)
     {
         threads[i].join();
     }
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    auto duration = duration_cast<minutes>(t2 - t1).count();
+    cout << "bit setting took " << duration << " minutes \n";
 
     // write it to file so we don't have to do it again
     save_to_file("data/pwned_passwords_bloomfilter.db");
+    high_resolution_clock::time_point t3 = high_resolution_clock::now();
+    auto duration2 = duration_cast<seconds>(t3 - t2).count();
+    cout << "saving to file took " << duration2 << " seconds \n";
 }
 
 void BloomFilter::init_from_dbfile(ifstream &dbfile)
@@ -82,7 +89,7 @@ void BloomFilter::init_from_dbfile(ifstream &dbfile)
     }
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     auto duration = duration_cast<seconds>(t2 - t1).count();
-    cout << "init from db cost " << duration << " seconds \n";
+    cout << "Done loading database. Took " << duration << " seconds.\n";
 }
 
 void BloomFilter::calculate_hashes(string element, LargeInt *hash1_out, LargeInt *hash2_out)
@@ -93,7 +100,7 @@ void BloomFilter::calculate_hashes(string element, LargeInt *hash1_out, LargeInt
     uint64_t message_len = strlen(message);
     MurmurHash3_x64_128(message, message_len, seed, murmur_output);
 
-    unsigned char sha256_output[EVP_MAX_MD_SIZE]; //can use 32 instead
+    unsigned char sha256_output[EVP_MAX_MD_SIZE]; // can use 32 instead
     unsigned int output_len;
 
     sha256((unsigned char *)message, message_len, sha256_output, &output_len);
