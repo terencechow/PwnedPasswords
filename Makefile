@@ -28,4 +28,4 @@ main.o : $(SRC_DIR)/main.cpp
 	$(CC) $(CXXFLAGS) -c $(SRC_DIR)/main.cpp -o $(BUILD_DIR)/$@
 
 main: murmur3.o hash.o bloom_filter.o main.o
-	$(CC) $(CXXFLAGS) -L$(OPENSSL_DIR)/lib $(LIB_DIR)/MurmurHash3.cpp $(wildcard $(SRC_DIR)/services/*.cpp) $(SRC_DIR)/main.cpp -lcrypto -o $(BUILD_DIR)/main
+	$(CC) $(CXXFLAGS) -L$(OPENSSL_DIR)/lib $(LIB_DIR)/MurmurHash3.cpp $(wildcard $(SRC_DIR)/services/*.cpp) $(SRC_DIR)/main.cpp -lcrypto -lgmp -o $(BUILD_DIR)/main

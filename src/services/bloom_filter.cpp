@@ -5,8 +5,12 @@ using namespace std;
 BloomFilter::BloomFilter()
 {
     threads = new thread[NUM_THREADS];
-}
 
+    // large prime chosen here: https://primes.utm.edu/lists/2small/200bit.html
+    mpz_init2(large_prime, 262);
+    mpz_ui_pow_ui(large_prime, 2, 262);
+    mpz_sub_ui(large_prime, large_prime, 71);
+}
 BloomFilter::~BloomFilter()
 {
     delete[] threads;
@@ -50,6 +54,7 @@ void BloomFilter::init_from_textfile(ifstream &inFile)
 {
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
     for (uint8_t i = 0; i < NUM_THREADS; i++)
+
     {
         threads[i] = thread(&BloomFilter::insert_passwords_thread, this, ref(inFile));
     }
@@ -92,7 +97,7 @@ void BloomFilter::init_from_dbfile(ifstream &dbfile)
     cout << "Done loading database. Took " << duration << " seconds.\n";
 }
 
-void BloomFilter::calculate_hashes(string element, LargeInt *hash1_out, LargeInt *hash2_out)
+void BloomFilter::calculate_hashes(string element, mpz_t &m_out, mpz_t &s_out)
 {
     uint64_t seed = 183510;
     uint64_t murmur_output[2]; // allocate 128 bits
@@ -105,19 +110,50 @@ void BloomFilter::calculate_hashes(string element, LargeInt *hash1_out, LargeInt
 
     sha256((unsigned char *)message, message_len, sha256_output, &output_len);
 
-    *hash1_out = LargeInt(murmur_output, 2);
-    *hash2_out = LargeInt(sha256_output, 4);
+    mpz_import(m_out, 2, 1, sizeof(uint64_t), 0, 0, murmur_output);
+    mpz_import(s_out, 32, 1, sizeof(unsigned char), 0, 0, sha256_output);
 }
 void BloomFilter::calculate_indices(string element, uint64_t *indices)
 {
-    LargeInt a, b;
-    calculate_hashes(element, &a, &b);
+    mpz_t murmur_hash;
+    mpz_init2(murmur_hash, 128);
+
+    mpz_t sha256_hash;
+    mpz_init2(sha256_hash, 256);
+
+    mpz_t sha256_multiple;
+    mpz_init2(sha256_multiple, 261);
+
+    mpz_t result;
+    mpz_init2(result, 389);
+
+    calculate_hashes(element, murmur_hash, sha256_hash);
+
+    uint64_t bloom_filter_size = NUM_BITS;
+    mpz_t bf_size;
+    mpz_init2(bf_size, 64);
+    mpz_import(bf_size, 1, 1, sizeof(uint64_t), 0, 0, &bloom_filter_size);
+
     for (uint8_t i = 0; i < NUM_HASH_FNS; i++)
     {
-        *indices = (a + b * i) % NUM_BITS;
+        // kirsch-mitzenmacher-optimization https://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf
+        // TODO: make this match the optimization, only mod second
+        mpz_mul_si(sha256_multiple, sha256_hash, i);
+        mpz_add(result, murmur_hash, sha256_multiple);
+        mpz_mod(result, result, large_prime);
+        mpz_mod(result, result, bf_size);
+        uint64_t index;
+        mpz_export(&index, NULL, 1, sizeof(uint64_t), 0, 0, result);
+
+        *indices = index;
         indices++;
     }
+    mpz_clear(murmur_hash);
+    mpz_clear(sha256_hash);
+    mpz_clear(sha256_multiple);
+    mpz_clear(result);
 }
+
 // add an element to the bloom filter
 void BloomFilter::add_element(string element)
 {
@@ -132,18 +168,50 @@ void BloomFilter::add_element(string element)
 // test an element exists in bloom filter
 bool BloomFilter::check_element(string element)
 {
-    LargeInt a, b;
-    calculate_hashes(element, &a, &b);
 
+    mpz_t murmur_hash;
+    mpz_init2(murmur_hash, 128);
+
+    mpz_t sha256_hash;
+    mpz_init2(sha256_hash, 256);
+
+    mpz_t sha256_multiple;
+    mpz_init2(sha256_multiple, 261);
+
+    mpz_t result;
+    mpz_init2(result, 389);
+
+    calculate_hashes(element, murmur_hash, sha256_hash);
+
+    uint64_t bloom_filter_size = NUM_BITS;
+    mpz_t bf_size;
+    mpz_init2(bf_size, 64);
+    mpz_import(bf_size, 1, 1, sizeof(uint64_t), 0, 0, &bloom_filter_size);
+
+    bool element_exists = true;
     for (uint8_t i = 0; i < NUM_HASH_FNS; i++)
     {
-        uint64_t index = (a + b * i) % NUM_BITS;
+        // kirsch-mitzenmacher-optimization https://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf
+        // TODO: make this match the optimization, only mod second
+        mpz_mul_si(sha256_multiple, sha256_hash, i);
+        mpz_add(result, murmur_hash, sha256_multiple);
+        mpz_mod(result, result, large_prime);
+        mpz_mod(result, result, bf_size);
+        uint64_t index;
+        mpz_export(&index, NULL, 1, sizeof(uint64_t), 0, 0, result);
+
         if (!bit_array.test(index))
         {
-            return false;
+            element_exists = false;
+            break;
         };
     }
-    return true;
+
+    mpz_clear(murmur_hash);
+    mpz_clear(sha256_hash);
+    mpz_clear(sha256_multiple);
+    mpz_clear(result);
+    return element_exists;
 }
 
 void BloomFilter::save_to_file(string filename)

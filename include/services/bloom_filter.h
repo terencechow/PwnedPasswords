@@ -10,6 +10,7 @@
 #include <stdlib.h> /* strtoull */
 #include <string>
 #include <thread>
+#include <gmp.h>
 
 using namespace std::chrono;
 
@@ -26,8 +27,6 @@ using namespace std::chrono;
 #define NUM_HASH_FNS 20
 #define NUM_THREADS 8
 
-#include <services/large_int.h>
-
 using namespace std;
 
 class BloomFilter
@@ -37,10 +36,11 @@ private:
   thread *threads;
   mutex file_mutex;
   mutex bitset_mutex;
-  void calculate_hashes(string element, LargeInt *murmur_output,
-                        LargeInt *sha256_output);
+  void calculate_hashes(string element, mpz_t &murmur_output,
+                        mpz_t &sha256_output);
   void calculate_indices(string element, uint64_t *indices);
   void insert_passwords_thread(ifstream &inFile);
+  mpz_t large_prime;
   void add_string_to_buffer();
 
 public:
