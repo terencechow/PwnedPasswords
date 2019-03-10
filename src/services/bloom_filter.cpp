@@ -5,11 +5,6 @@ using namespace std;
 BloomFilter::BloomFilter()
 {
     threads = new thread[NUM_THREADS];
-
-    // large prime chosen here: https://primes.utm.edu/lists/2small/200bit.html
-    mpz_init2(large_prime, 262);
-    mpz_ui_pow_ui(large_prime, 2, 262);
-    mpz_sub_ui(large_prime, large_prime, 71);
 }
 BloomFilter::~BloomFilter()
 {
@@ -97,37 +92,36 @@ void BloomFilter::init_from_dbfile(ifstream &dbfile)
     cout << "Done loading database. Took " << duration << " seconds.\n";
 }
 
-void BloomFilter::calculate_hashes(string element, mpz_t &m_out, mpz_t &s_out)
+void BloomFilter::calculate_hashes(string element, mpz_t &xxh_1_out, mpz_t &xxh_2_out)
 {
-    uint64_t seed = 183510;
-    uint64_t murmur_output[2]; // allocate 128 bits
+    // randomly generated
+    uint64_t seed = 0x44824EDFA779737D;
+    uint64_t seed_2 = 0x90948FBEF5B0B8EB;
+
     const char *message = element.c_str();
     uint64_t message_len = strlen(message);
-    MurmurHash3_x64_128(message, message_len, seed, murmur_output);
 
-    unsigned char sha256_output[EVP_MAX_MD_SIZE]; // can use 32 instead
-    unsigned int output_len;
+    uint64_t xxh_1 = XXH64(message, message_len, seed);
+    uint64_t xxh_2 = XXH64(message, message_len, seed_2);
 
-    sha256((unsigned char *)message, message_len, sha256_output, &output_len);
-
-    mpz_import(m_out, 2, 1, sizeof(uint64_t), 0, 0, murmur_output);
-    mpz_import(s_out, 32, 1, sizeof(unsigned char), 0, 0, sha256_output);
+    mpz_import(xxh_1_out, 1, 1, sizeof(xxh_1), 0, 0, &xxh_1);
+    mpz_import(xxh_2_out, 1, 1, sizeof(xxh_2), 0, 0, &xxh_2);
 }
 void BloomFilter::calculate_indices(string element, uint64_t *indices)
 {
-    mpz_t murmur_hash;
-    mpz_init2(murmur_hash, 128);
+    mpz_t xxh_1;
+    mpz_init2(xxh_1, 64);
 
-    mpz_t sha256_hash;
-    mpz_init2(sha256_hash, 256);
+    mpz_t xxh_2;
+    mpz_init2(xxh_2, 64);
 
-    mpz_t sha256_multiple;
-    mpz_init2(sha256_multiple, 261);
+    mpz_t xxh_2_multiple;
+    mpz_init2(xxh_2_multiple, sizeof(uint64_t) + ceil(log2(NUM_HASH_FNS)));
 
     mpz_t result;
-    mpz_init2(result, 389);
+    mpz_init2(result, sizeof(uint64_t) + ceil(log2(NUM_HASH_FNS)) + 1);
 
-    calculate_hashes(element, murmur_hash, sha256_hash);
+    calculate_hashes(element, xxh_1, xxh_2);
 
     uint64_t bloom_filter_size = NUM_BITS;
     mpz_t bf_size;
@@ -137,10 +131,8 @@ void BloomFilter::calculate_indices(string element, uint64_t *indices)
     for (uint8_t i = 0; i < NUM_HASH_FNS; i++)
     {
         // kirsch-mitzenmacher-optimization https://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf
-        // TODO: make this match the optimization, only mod second
-        mpz_mul_si(sha256_multiple, sha256_hash, i);
-        mpz_add(result, murmur_hash, sha256_multiple);
-        mpz_mod(result, result, large_prime);
+        mpz_mul_si(xxh_2_multiple, xxh_2, i);
+        mpz_add(result, xxh_1, xxh_2_multiple);
         mpz_mod(result, result, bf_size);
         uint64_t index;
         mpz_export(&index, NULL, 1, sizeof(uint64_t), 0, 0, result);
@@ -148,10 +140,12 @@ void BloomFilter::calculate_indices(string element, uint64_t *indices)
         *indices = index;
         indices++;
     }
-    mpz_clear(murmur_hash);
-    mpz_clear(sha256_hash);
-    mpz_clear(sha256_multiple);
+
+    mpz_clear(xxh_1);
+    mpz_clear(xxh_2);
+    mpz_clear(xxh_2_multiple);
     mpz_clear(result);
+    mpz_clear(bf_size);
 }
 
 // add an element to the bloom filter
@@ -168,34 +162,31 @@ void BloomFilter::add_element(string element)
 // test an element exists in bloom filter
 bool BloomFilter::check_element(string element)
 {
+    mpz_t xxh_1;
+    mpz_init2(xxh_1, 64);
 
-    mpz_t murmur_hash;
-    mpz_init2(murmur_hash, 128);
+    mpz_t xxh_2;
+    mpz_init2(xxh_2, 64);
 
-    mpz_t sha256_hash;
-    mpz_init2(sha256_hash, 256);
-
-    mpz_t sha256_multiple;
-    mpz_init2(sha256_multiple, 261);
+    mpz_t xxh_2_multiple;
+    mpz_init2(xxh_2_multiple, sizeof(uint64_t) + ceil(log2(NUM_HASH_FNS)));
 
     mpz_t result;
-    mpz_init2(result, 389);
-
-    calculate_hashes(element, murmur_hash, sha256_hash);
+    mpz_init2(result, sizeof(uint64_t) + ceil(log2(NUM_HASH_FNS)) + 1);
 
     uint64_t bloom_filter_size = NUM_BITS;
     mpz_t bf_size;
     mpz_init2(bf_size, 64);
     mpz_import(bf_size, 1, 1, sizeof(uint64_t), 0, 0, &bloom_filter_size);
 
+    calculate_hashes(element, xxh_1, xxh_2);
+
     bool element_exists = true;
     for (uint8_t i = 0; i < NUM_HASH_FNS; i++)
     {
         // kirsch-mitzenmacher-optimization https://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf
-        // TODO: make this match the optimization, only mod second
-        mpz_mul_si(sha256_multiple, sha256_hash, i);
-        mpz_add(result, murmur_hash, sha256_multiple);
-        mpz_mod(result, result, large_prime);
+        mpz_mul_si(xxh_2_multiple, xxh_2, i);
+        mpz_add(result, xxh_1, xxh_2_multiple);
         mpz_mod(result, result, bf_size);
         uint64_t index;
         mpz_export(&index, NULL, 1, sizeof(uint64_t), 0, 0, result);
@@ -207,10 +198,11 @@ bool BloomFilter::check_element(string element)
         };
     }
 
-    mpz_clear(murmur_hash);
-    mpz_clear(sha256_hash);
-    mpz_clear(sha256_multiple);
+    mpz_clear(xxh_1);
+    mpz_clear(xxh_2);
+    mpz_clear(xxh_2_multiple);
     mpz_clear(result);
+    mpz_clear(bf_size);
     return element_exists;
 }
 

@@ -7,12 +7,6 @@ void handleErrors(string message)
     cout << "failed at " << message << "\n";
 }
 
-void sha256(const unsigned char *message, size_t message_len, unsigned char *digest, unsigned int *digest_len)
-{
-    const char *name = "sha256";
-    digest_message(name, message, message_len, digest, digest_len);
-}
-
 void sha1(const unsigned char *message, size_t message_len, unsigned char *digest, unsigned int *digest_len)
 {
     const char *name = "sha1";

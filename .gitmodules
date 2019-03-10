@@ -1,3 +1,3 @@
-[submodule "lib/smhasher"]
-	path = lib/smhasher
-	url = https://github.com/aappleby/smhasher.git
+[submodule "lib/xxHash"]
+	path = lib/xxHash
+	url = git@github.com:Cyan4973/xxHash.git

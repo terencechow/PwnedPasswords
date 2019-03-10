@@ -5,7 +5,7 @@
             "includePath": [
                 "/usr/local/opt/openssl/include",
                 "${workspaceFolder}/**",
-                "${workspaceFolderlib/smhasher/src"
+                "${workspaceFolderlib/xxHash"
             ],
             "defines": [],
             "macFrameworkPath": [

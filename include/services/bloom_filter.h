@@ -1,6 +1,7 @@
 #ifndef _BLOOM_FILTER_
 #define _BLOOM_FILTER_
-#include "MurmurHash3.h"
+#define XXH_INLINE_ALL
+#include "xxhash.h"
 #include <bitset>
 #include <chrono>
 #include <fstream>
@@ -36,11 +37,9 @@ private:
   thread *threads;
   mutex file_mutex;
   mutex bitset_mutex;
-  void calculate_hashes(string element, mpz_t &murmur_output,
-                        mpz_t &sha256_output);
+  void calculate_hashes(string element, mpz_t &xxh_out_1, mpz_t &xxh_out_2);
   void calculate_indices(string element, uint64_t *indices);
   void insert_passwords_thread(ifstream &inFile);
-  mpz_t large_prime;
   void add_string_to_buffer();
 
 public:
