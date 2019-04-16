@@ -33,4 +33,5 @@
 
 build/*
 data/*.txt
-data/pwned_passwords_bloomfilter.db
+data/*.db
+.vscode/ipch/

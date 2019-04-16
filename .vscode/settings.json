@@ -32,6 +32,10 @@
         "chrono": "cpp",
         "ostream": "cpp",
         "__mutex_base": "cpp",
-        "istream": "cpp"
+        "istream": "cpp",
+        "*.tpp": "cpp",
+        "tuple": "cpp",
+        "__tuple": "cpp",
+        "__functional_base": "cpp"
     }
 }

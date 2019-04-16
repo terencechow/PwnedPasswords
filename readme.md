@@ -15,11 +15,15 @@ Optimal hash functions   = -log<sub>2</sub>(p)
 
 https://en.wikipedia.org/wiki/Bloom_filter
 
-There are ~550M passwords in the pwned passwords list, at ~3.6 bytes per element, the whole bloom filter is roughly 2gb. Checking for a password takes ~ 50 microseconds or 0.05 milliseconds.
+There are ~550M passwords in the pwned passwords list, at ~3.6 bytes per element, the whole bloom filter is roughly 2gb. However, the bloomfilter is then separated into sections of 4096 bits and encoded with a Golomb Coding. 
+
+https://en.wikipedia.org/wiki/Golomb_coding
+
+Checking for a password takes ~ 30 microseconds or 0.03 milliseconds.
 
 After the bloom filter is created it is saved to a file so it doesn't need to be recreated again. Creating the bloom filter takes ~1 hr on my 4 core 2.5Ghz i7.
 
-If you are willing to take a higher probability of false positives you can get a smaller bloom filter and quicker access / creation times. You can tune `NUM_BITS` and `NUM_HASH_FNS` defined in `bloom_filter.h`. You can also tune `NUM_THREADS` to match the number of cores on your computer.
+If you are willing to take a higher probability of false positives you can get a smaller bloom filter and quicker access / creation times. 
 
 ## Build
 
@@ -47,4 +51,4 @@ Now you can run with:
 ./build/main 
 ```
 
-This will now process the 24gb txt file and turn it into a 2gb binary file  bloom filter. Again, on my 4 core 2.5Ghz i7 it took 1 hour. (Note I have 4 physical cores but 8 logical cores). Subsequent runs will load the bloom filter from the 2gb binary file.
+This will now process the 24gb txt file and turn it into a binary file that is a golomb coded bloom filter. Again, on my 4 core 2.5Ghz i7 it took 1 hour. (Note I have 4 physical cores but 8 logical cores). Subsequent runs will load the bloom filter from the binary file.
