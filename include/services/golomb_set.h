@@ -36,11 +36,13 @@ private:
   Tuint get_m_param();
   mutex file_mutex;
   uint64_t processed;
+  string hash_plaintext(string element);
 
 public:
   GolombSet(double fpr) : false_positive_rate(fpr){};
   ~GolombSet();
-  void add_element(string element);
+  void add_password(string element);
+  void add_hash(string element);
   bool check_password(string element);
   bool check_hash(string element);
   void save_to_file(string filename);

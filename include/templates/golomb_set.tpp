@@ -31,18 +31,44 @@ void GolombSet<Tuint>::get_section_and_position(string element, uint64_t *sectio
     *position = index % section_size + 1;
 };
 
-// add an element to the bloom filter
+// hash plaintext consistently
 template <class Tuint>
-void GolombSet<Tuint>::add_element(string element)
+string GolombSet<Tuint>::hash_plaintext(string plaintext)
+{
+    const char *message = plaintext.c_str();
+    uint64_t message_len = strlen(message);
+
+    unsigned char output[EVP_MAX_MD_SIZE];
+    unsigned int output_len;
+    sha1((unsigned char *)message, message_len, output, &output_len);
+
+    char sha1_hash[output_len * 2 + 1];
+    for (unsigned int i = 0; i < output_len; i++)
+        sprintf(&sha1_hash[i * 2], "%02X", (unsigned int)output[i]);
+
+    return sha1_hash;
+};
+
+// add a password to the bloom filter
+template <class Tuint>
+void GolombSet<Tuint>::add_password(string element)
+{
+    string hash = hash_plaintext(element);
+    add_hash(hash);
+};
+
+// add a hash to the bloom filter
+template <class Tuint>
+void GolombSet<Tuint>::add_hash(string hash)
 {
     uint64_t section;
     Tuint position;
-    get_section_and_position(element, &section, &position);
+    get_section_and_position(hash, &section, &position);
 
     codings[section].add_bit(position);
 };
 
-// test an element exists in bloom filter
+// test a hash exists in bloom filter
 template <class Tuint>
 bool GolombSet<Tuint>::check_hash(string hash)
 {
@@ -55,19 +81,8 @@ bool GolombSet<Tuint>::check_hash(string hash)
 template <class Tuint>
 bool GolombSet<Tuint>::check_password(string password)
 {
-    // turn string into sha1 hash
-    const char *message = password.c_str();
-    uint64_t message_len = strlen(message);
-
-    unsigned char output[EVP_MAX_MD_SIZE];
-    unsigned int output_len;
-    sha1((unsigned char *)message, message_len, output, &output_len);
-
-    char sha1_hash[output_len * 2 + 1];
-    for (unsigned int i = 0; i < output_len; i++)
-        sprintf(&sha1_hash[i * 2], "%02X", (unsigned int)output[i]);
-
-    return check_hash(sha1_hash);
+    string hash = hash_plaintext(password);
+    return check_hash(hash);
 }
 
 template <class Tuint>
