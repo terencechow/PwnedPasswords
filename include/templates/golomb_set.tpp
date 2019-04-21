@@ -1,4 +1,10 @@
 template <class Tuint>
+GolombSet<Tuint>::GolombSet(){};
+
+template <class Tuint>
+GolombSet<Tuint>::GolombSet(double fpr) : false_positive_rate(fpr){};
+
+template <class Tuint>
 GolombSet<Tuint>::~GolombSet()
 {
     delete[] codings;
@@ -316,7 +322,7 @@ void GolombSet<Tuint>::init_from_dbfile(string db_filename)
     dbfile.read(reinterpret_cast<char *>(&section_size), sizeof(section_size));
     dbfile.read(reinterpret_cast<char *>(&num_passwords), sizeof(num_passwords));
 
-    cout << "Loading database with " << num_passwords << " passwords.\n. Please wait this can take up to a minute...";
+    cout << "Loading database with " << num_passwords << " passwords.\n. Please wait this can take up to a minute...\n";
 
     // generate sections
     codings = new GolombCoding<Tuint>[num_sections];
@@ -339,7 +345,7 @@ void GolombSet<Tuint>::init_from_dbfile(string db_filename)
             throw bad_alloc();
         }
 
-        for (uint j = 0; j < num_bytes; j++)
+        for (uint64_t j = 0; j < num_bytes; j++)
         {
             dbfile.read(reinterpret_cast<char *>(&codings[i].bytes[j]), sizeof(codings[i].bytes[j]));
         }

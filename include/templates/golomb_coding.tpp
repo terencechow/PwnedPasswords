@@ -356,9 +356,9 @@ bool GolombCoding<Tuint>::check_bit(Tuint position)
         return 0;
     }
 
-    Tuint quotient;
-    Tuint remainder;
-    Tuint num_ones;
+    Tuint quotient = 0;
+    Tuint remainder = 0;
+    Tuint num_ones = 0;
     Tuint bit_index = 0;
     Tuint running_position = 0;
 
@@ -456,7 +456,6 @@ Tuint GolombCoding<Tuint>::decode_truncated_binary(Tuint starting_bit, Tuint *tr
             }
             bits_read++;
             bit_index++;
-
             if ((bits_read == b - 1 && (*truncated_binary >> (sizeof(Tuint) * 8 - bits_read)) < cutoff) || bits_read == b)
             {
                 *truncated_binary >>= (sizeof(Tuint) * 8 - bits_read);

@@ -8,7 +8,6 @@
 #include <stdlib.h> /* strtoull */
 #include <string>
 #include <thread>
-#include <gmp.h>
 #include <services/golomb_coding.h>
 #include <services/hash.h>
 #include <string>
@@ -39,7 +38,8 @@ private:
   string hash_plaintext(string element);
 
 public:
-  GolombSet(double fpr) : false_positive_rate(fpr){};
+  GolombSet();
+  GolombSet(double fpr);
   ~GolombSet();
   void add_password(string element);
   void add_hash(string element);

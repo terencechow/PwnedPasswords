@@ -36,6 +36,7 @@
         "*.tpp": "cpp",
         "tuple": "cpp",
         "__tuple": "cpp",
-        "__functional_base": "cpp"
+        "__functional_base": "cpp",
+        "fstream": "cpp"
     }
 }
