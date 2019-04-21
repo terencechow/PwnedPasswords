@@ -1,27 +1,27 @@
-## PwnedPasswords (WIP)
+# PwnedPasswords as a service (aka PWNEDPAAS)
+
+## TL:DR;
 
 This program takes the most recent (Jan 2019) pwned passwords list from haveibeenpwned.com (~24gb) and puts those hashed passwords into a bloomfilter. 
 
-Afterwards you can input a password and see if it is in the hacked passwords list.
+Afterwards you can input a password and see if it is in the hacked passwords list. While importing the initial data requires a computer with 24gb disk space (since the password file is 24gb), once the passwords has been imported, a binary file representing the bloom filter is created that is ~1.5gb. From that point on, only the 1.5gb database file is needed to start the service. Note that importing from a text file requires at least 4.5gb RAM and 24gb hard disk. Starting with a db file requires 1.5gb of RAM and 1.5gb of hard disk (for the db file).
+
+Bindings have been created to be able to call into this program and have a microservice that simply returns true when a password is in the hacked list and false when it is not. See `bindings` folder for an example. 
+
+## Details
 
 For my bloom filter I've used a probability of 1 in a million which means 
-there will be a false positive once in a million passwords. 
+there will be a false positive once in a million passwords. This was arbitrarily chosen and indeed a smaller number will result in a smaller database and lower RAM / storage requirements. 
 
-The optimal number of hash functions used was 20 and the optimal number of bits per element was ~3.6 bytes. The equations used are from below:
-
-Optimal bits per element = -1.44 * log<sub>2</sub>(p)
-<br>
-Optimal hash functions   = -log<sub>2</sub>(p)
+Originally this program only created a bloom filter. That resulted in a size of ~2gb. In an effort to lower the storage requirements further, the bloomfilter was then separated into many sections and each section encoded as a Golomb Coding. This data structure is known as a Golomb Set.
 
 https://en.wikipedia.org/wiki/Bloom_filter
 
-There are ~550M passwords in the pwned passwords list, at ~3.6 bytes per element, the whole bloom filter is roughly 2gb. However, the bloomfilter is then separated into sections of 4096 bits and encoded with a Golomb Coding. 
-
 https://en.wikipedia.org/wiki/Golomb_coding
 
-Checking for a password takes ~ 30 microseconds or 0.03 milliseconds.
+Checking for a password takes ~ 30 microseconds or 0.03 milliseconds on my computer.
 
-After the golomb set is created it is saved to a file so it doesn't need to be recreated again. Creating the golomb set takes ~25 minutes on my 4 core 2.5Ghz i7 and the set is ~1.5gb. 
+Importing the pwned passwords list uses all the threads on your computer to speed things up since it needs to process quite a large number of passwords. On my macbook i7 with 8 virtual cores, it processed the entire 550M password list in about 25 minutes. Subsequent runs will load the database file and this took approximately 22 seconds on my macbook.
 
 If you are willing to take a higher probability of false positives you can get a smaller set and quicker access / creation times. 
 
@@ -43,7 +43,7 @@ This will create a file `main` in the `build` directory.
 
 ## Run
 
-Before running make sure you've downloaded and extracted the pwnedpasswords to `./data/pwned-passwords-sha1-ordered-by-hash-v4.txt`. Note that file is 24gb but you can delete it after the bloom filter has been created.
+Before running make sure you've downloaded and extracted the pwnedpasswords to `./data/pwned-passwords-sha1-ordered-by-hash-v4.txt`. Note that file is 24gb but you can delete it after the bloom filter has been created. Alternatively if you want to just test an example password dataset, you can run `./generate_sample.sh` which will create a password list of 100 passwords. The passwords in this set are `test1`, `test2`, etc. up to `test100` inclusive. 
 
 Now you can run with:
 
@@ -51,20 +51,13 @@ Now you can run with:
 ./build/main 
 ```
 
-This will now process the 24gb txt file and turn it into a binary file that is a golomb set. Again, on my 4 core 2.5Ghz i7 it took 25 minutes. (Note I have 4 physical cores but 8 logical cores). Subsequent runs will load the bloom filter from the binary file and take approximately 22 seconds.
-
-## Caveats
-
-When initializing from a text file, rather then generate a bloom filter and store 1 bit for each password, I opted to store the `uint64_t` index which results in 8 bytes. Hence initializing from a text file requires more than 4gb. This is a one time cost as initializing from a previously created db only requires 1.5gb.
-
-There is potential to improve the 4gb initialization from textfile requirement. It would require creating a bloom filter instead of storing all the indices. That would lower the ram requirement to perhaps 2gb.
+This will now process the password file and turn it into the binary file.
 
 ## Potential future work
+- When initializing from a text file, rather then generate a bloom filter and store 1 bit for each password, I opted to store the `uint64_t` index which results in 8 bytes. Hence initializing from a text file requires more than 4gb (550M uint64_t ~= 4.4 gb). This is a one time cost as initializing from a previously created db only requires 1.5gb. Using a bloom filter would lower this RAM requirement to ~2gb.
 
-- Use a bloom filter for initializing from text file.
-- Investigate memory mapping and whether that could lower ram requirements. 
-- Investigate writing to disk different sections of the golomb set and whether that would lower ram requirements
-- Use a bloom filter instead of a golomb set, but write different sections to disk and page in files on demand (like a real database)
+- Writing to disk different sections of the golomb set could significantly lower ram requirements at the cost of checking password speed. However the cost might not be significant.
+- Although I switched to a golomb set to use lower ram, a bloom filter that is split into separate sections and written to disk would also significantly lower ram requirements. It's not clear whether checking inclusion of a password could be faster in this scenario because many different sections would need to be read from disk and checked, however there would be no decoding that is required with golomb sets.
 
 ## Bindings
 - The bindings folder holds bindings for other languages. This allows one to start a server in Node.js (for example) and call out to the db. In this way we can have a simple pwned passwords service.
