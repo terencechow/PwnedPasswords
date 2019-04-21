@@ -1,0 +1,34 @@
+{
+  "name": "pwnedpasswords",
+  "version": "1.0.0",
+  "description": "This program takes the most recent (Jan 2019) pwned passwords list from haveibeenpwned.com (~24gb) and puts those hashed passwords into a bloomfilter.",
+  "main": "js/server.js",
+  "directories": {
+    "lib": "lib",
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node-gyp rebuild",
+    "clean": "node-gyp clean"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/terencechow/PwnedPasswords.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/terencechow/PwnedPasswords/issues"
+  },
+  "homepage": "https://github.com/terencechow/PwnedPasswords#readme",
+  "dependencies": {
+    "express": "^4.16.4",
+    "node-addon-api": "^1.6.3"
+  },
+  "devDependencies": {
+    "node-gyp": "^3.8.0"
+  },
+  "gypfile": true
+}

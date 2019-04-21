@@ -23,7 +23,7 @@ main.o : $(SRC_DIR)/main.cpp
 	$(CC) $(CXXFLAGS) -c $(SRC_DIR)/main.cpp -o $(BUILD_DIR)/$@
 
 main: hash.o main.o
-	$(CC) $(CXXFLAGS) -L$(OPENSSL_DIR)/lib $(addprefix $(BUILD_DIR)/,$^) -lcrypto -lgmp -o $(BUILD_DIR)/main
+	$(CC) $(CXXFLAGS) -L$(OPENSSL_DIR)/lib $(addprefix $(BUILD_DIR)/,$^) -lcrypto -o $(BUILD_DIR)/main
 
 golomb_coding_unit_test.o : $(INCLUDE_DIR)/services/golomb_coding.h
 	$(CC) $(CXXFLAGS) -c $(TEST_DIR)/golomb_coding/test-bundler.cpp -o $(BUILD_DIR)/$@

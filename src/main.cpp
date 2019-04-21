@@ -13,7 +13,7 @@ int main()
     GolombSet<uint64_t> golomb_set(0.000001);
 
     // check if database file exists
-    string db_filename = "data/pwned_passwords_bloomfilter.db";
+    string db_filename = "data/pwned_passwords.db";
     ifstream dbFile(db_filename, ios::in | ios::binary);
     if (!dbFile.is_open())
     {

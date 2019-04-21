@@ -65,4 +65,6 @@ There is potential to improve the 4gb initialization from textfile requirement. 
 - Investigate memory mapping and whether that could lower ram requirements. 
 - Investigate writing to disk different sections of the golomb set and whether that would lower ram requirements
 - Use a bloom filter instead of a golomb set, but write different sections to disk and page in files on demand (like a real database)
-- make some bindings to node.js and make a simple microservice app that has an endpoint to simply check whether a password is valid or invalid.
+
+## Bindings
+- The bindings folder holds bindings for other languages. This allows one to start a server in Node.js (for example) and call out to the db. In this way we can have a simple pwned passwords service.

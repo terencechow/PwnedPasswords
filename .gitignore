@@ -31,7 +31,9 @@
 *.out
 *.app
 
-build/*
+build/
 data/*.txt
 data/*.db
 .vscode/ipch/
+
+node_modules/
